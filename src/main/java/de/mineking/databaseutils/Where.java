@@ -165,7 +165,7 @@ public interface Where {
 	}
 
 	@NotNull
-	static Where in(@NotNull String name, @NotNull Collection<?> value) {
+	static Where valueContainsField(@NotNull String name, @NotNull Collection<?> value) {
 		if(value.isEmpty()) return FALSE();
 
 		var id = ID.generate().asString();
@@ -191,7 +191,7 @@ public interface Where {
 	}
 
 	@NotNull
-	static Where contains(@NotNull String name, @Nullable Object value) {
+	static Where fieldContainsValue(@NotNull String name, @Nullable Object value) {
 		var id = ID.generate().asString();
 		return new WhereImpl(":" + id + " = any(\"" + name + "\")", Map.of(id, ArgumentFactory.create(name, value, table -> {
 			var f = table.getColumns().get(name);
