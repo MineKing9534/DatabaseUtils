@@ -7,6 +7,10 @@ import org.jdbi.v3.core.argument.Argument;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -161,12 +165,29 @@ public interface Where {
 	}
 
 	@NotNull
-	static Where in(@NotNull String name, @NotNull Iterable<?> values) {
-		var temp = new ArrayList<>();
-		values.forEach(temp::add);
+	static Where in(@NotNull String name, @NotNull Collection<?> value) {
+		if(value.isEmpty()) return FALSE();
 
-		if(temp.isEmpty()) return FALSE();
-		return WhereImpl.create(name, temp, "in", Collectors.joining(", ", "(", ")"));
+		var id = ID.generate().asString();
+		return new WhereImpl(name + " = any(:" + id + ")", Map.of(id, ArgumentFactory.create(name, value, table -> {
+			var f = table.getColumns().get(name);
+			if(f == null) throw new IllegalStateException("Table has no column with name '" + name + "'");
+
+			var type = getClazz(f.getGenericType()).arrayType();
+			var mapper = table.getManager().getMapper(type, f);
+
+			return mapper.createArgument(table.getManager(), type, f, mapper.format(table.getManager(), type, f, value));
+		})));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <D> Class<D> getClazz(@NotNull Type type) {
+		if (type instanceof Class<?> c) return (Class<D>) c;
+		if (type instanceof ParameterizedType pt) return getClazz(pt.getRawType());
+		if (type instanceof GenericArrayType gt) return (Class<D>) getClazz(gt.getGenericComponentType()).arrayType();
+		if (type instanceof WildcardType) return (Class<D>) void.class;
+
+		throw new IllegalArgumentException("Cannot find Class for " + type);
 	}
 
 	@NotNull
