@@ -173,21 +173,11 @@ public interface Where {
 			var f = table.getColumns().get(name);
 			if(f == null) throw new IllegalStateException("Table has no column with name '" + name + "'");
 
-			var type = getClazz(f.getGenericType()).arrayType();
+			var type = ReflectionHelpers.getClazz(f.getGenericType()).arrayType();
 			var mapper = table.getManager().getMapper(type, f);
 
 			return mapper.createArgument(table.getManager(), type, f, mapper.format(table.getManager(), type, f, value));
 		})));
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <D> Class<D> getClazz(@NotNull Type type) {
-		if (type instanceof Class<?> c) return (Class<D>) c;
-		if (type instanceof ParameterizedType pt) return getClazz(pt.getRawType());
-		if (type instanceof GenericArrayType gt) return (Class<D>) getClazz(gt.getGenericComponentType()).arrayType();
-		if (type instanceof WildcardType) return (Class<D>) void.class;
-
-		throw new IllegalArgumentException("Cannot find Class for " + type);
 	}
 
 	@NotNull

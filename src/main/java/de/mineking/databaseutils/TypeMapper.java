@@ -44,6 +44,9 @@ public interface TypeMapper<T, R> {
 		};
 	}
 
+	@NotNull
+	Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable R value);
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	default T format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable R value) {
@@ -71,6 +74,12 @@ public interface TypeMapper<T, R> {
 			return type.equals(int.class) ? PostgresType.SERIAL : PostgresType.BIG_SERIAL;
 		}
 
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Integer value) {
+			return Integer.class;
+		}
+
 		@Nullable
 		@Override
 		public Integer extract(@NotNull ResultSet set, @NotNull String name, @NotNull Type target) throws SQLException {
@@ -88,6 +97,12 @@ public interface TypeMapper<T, R> {
 		@Override
 		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
 			return PostgresType.INTEGER;
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Integer value) {
+			return Integer.class;
 		}
 
 		@Nullable
@@ -109,6 +124,12 @@ public interface TypeMapper<T, R> {
 			return PostgresType.BIG_INT;
 		}
 
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Long value) {
+			return Long.class;
+		}
+
 		@Nullable
 		@Override
 		public Long extract(@NotNull ResultSet set, @NotNull String name, @NotNull Type target) throws SQLException {
@@ -126,6 +147,12 @@ public interface TypeMapper<T, R> {
 		@Override
 		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
 			return PostgresType.NUMERIC;
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Double value) {
+			return Double.class;
 		}
 
 		@Nullable
@@ -163,6 +190,12 @@ public interface TypeMapper<T, R> {
 			};
 		}
 
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable byte[] value) {
+			return byte[].class;
+		}
+
 		@Override
 		public byte[] extract(@NotNull ResultSet set, @NotNull String name, @NotNull Type target) throws SQLException {
 			return set.getBytes(name);
@@ -179,6 +212,12 @@ public interface TypeMapper<T, R> {
 		@Override
 		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
 			return PostgresType.BOOLEAN;
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Boolean value) {
+			return Boolean.class;
 		}
 
 		@Nullable
@@ -200,6 +239,12 @@ public interface TypeMapper<T, R> {
 			return PostgresType.TEXT;
 		}
 
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable String value) {
+			return String.class;
+		}
+
 		@Nullable
 		@Override
 		public String extract(@NotNull ResultSet set, @NotNull String name, @NotNull Type target) throws SQLException {
@@ -211,6 +256,12 @@ public interface TypeMapper<T, R> {
 		@Override
 		public boolean accepts(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
 			return ReflectionUtils.getClass(type).isAssignableFrom(Instant.class);
+		}
+
+		@NotNull
+		@Override
+		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
+			return PostgresType.TIMESTAMP;
 		}
 
 		@NotNull
@@ -231,8 +282,8 @@ public interface TypeMapper<T, R> {
 
 		@NotNull
 		@Override
-		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
-			return PostgresType.TIMESTAMP;
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Instant value) {
+			return Instant.class;
 		}
 
 		@Nullable
@@ -253,6 +304,12 @@ public interface TypeMapper<T, R> {
 		@Override
 		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
 			return PostgresType.UUID;
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable java.util.UUID value) {
+			return java.util.UUID.class;
 		}
 
 		@NotNull
@@ -279,6 +336,12 @@ public interface TypeMapper<T, R> {
 		@Override
 		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
 			return PostgresType.TEXT;
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable ID value) {
+			return String.class;
 		}
 
 		@NotNull
@@ -310,6 +373,15 @@ public interface TypeMapper<T, R> {
 		@Override
 		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
 			return manager.getType(ReflectionUtils.getComponentType(type), f);
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Optional<?> value) {
+			if(value == null) return Object.class;
+
+			var p = ReflectionUtils.getComponentType(type);
+			return manager.getMapper(p, f).getFormattedType(manager, type, f, value);
 		}
 
 		@Nullable
@@ -345,6 +417,12 @@ public interface TypeMapper<T, R> {
 		@Override
 		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
 			return PostgresType.TEXT;
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Enum<?> value) {
+			return String.class;
 		}
 
 		@Nullable
@@ -404,6 +482,12 @@ public interface TypeMapper<T, R> {
 			};
 		}
 
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			return ReflectionHelpers.getClazz(ReflectionUtils.getComponentType(type)).arrayType();
+		}
+
 		@Nullable
 		@Override
 		public Object[] format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
@@ -452,21 +536,7 @@ public interface TypeMapper<T, R> {
 
 			return ReflectionUtils.isArray(type, false)
 					? array.toArray(i -> ReflectionUtils.createArray(component, i))
-					: createCollection(ReflectionUtils.getClass(type), ReflectionUtils.getClass(component), array);
-		}
-
-		@SuppressWarnings("unchecked")
-		private <C> Collection<C> createCollection(Class<?> type, Class<?> component, List<C> array) {
-			if(type.isAssignableFrom(List.class)) return new ArrayList<>(array);
-			else if(type.isAssignableFrom(Set.class)) return new HashSet<>(array);
-			else if(type.isAssignableFrom(EnumSet.class)) return (Collection<C>) createEnumSet(array, component);
-
-			throw new IllegalStateException("Cannot create collection for " + type.getTypeName() + " with component " + component.getTypeName());
-		}
-
-		@SuppressWarnings("unchecked")
-		private <E extends Enum<E>> EnumSet<E> createEnumSet(Collection<?> collection, Class<?> component) {
-			return collection.isEmpty() ? EnumSet.noneOf((Class<E>) component) : EnumSet.copyOf((Collection<E>) collection);
+					: ReflectionHelpers.createCollection(ReflectionUtils.getClass(type), ReflectionUtils.getClass(component), array);
 		}
 	};
 
@@ -500,6 +570,12 @@ public interface TypeMapper<T, R> {
 					return Objects.toString(value);
 				}
 			};
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			return String.class;
 		}
 
 		@NotNull
