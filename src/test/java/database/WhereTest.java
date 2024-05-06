@@ -63,11 +63,11 @@ public class WhereTest {
 
 	@Test
 	public void in() {
-		assertEquals(0, table.selectMany(Where.in("test", List.of())).size());
-		assertEquals(2, table.selectMany(Where.in("test", List.of("a"))).size());
-		assertEquals(2, table.selectMany(Where.in("test", List.of("b"))).size());
-		assertEquals(4, table.selectMany(Where.in("test", List.of("a", "b"))).size());
-		assertEquals(5, table.selectMany(Where.in("test", List.of("a", "b", "c"))).size());
+		assertEquals(0, table.selectMany(Where.valueContainsField("test", List.of())).size());
+		assertEquals(2, table.selectMany(Where.valueContainsField("test", List.of("a"))).size());
+		assertEquals(2, table.selectMany(Where.valueContainsField("test", List.of("b"))).size());
+		assertEquals(4, table.selectMany(Where.valueContainsField("test", List.of("a", "b"))).size());
+		assertEquals(5, table.selectMany(Where.valueContainsField("test", List.of("a", "b", "c"))).size());
 	}
 
 	@Test
@@ -79,9 +79,9 @@ public class WhereTest {
 
 	@Test
 	public void contains() {
-		assertEquals(3, table.selectMany(Where.contains("array", "a")).size());
-		assertEquals(3, table.selectMany(Where.contains("array", "b")).size());
-		assertEquals(4, table.selectMany(Where.contains("array", "c")).size());
-		assertEquals(2, table.selectMany(Where.contains("array", "d")).size());
+		assertEquals(3, table.selectMany(Where.fieldContainsValue("array", "a")).size());
+		assertEquals(3, table.selectMany(Where.fieldContainsValue("array", "b")).size());
+		assertEquals(4, table.selectMany(Where.fieldContainsValue("array", "c")).size());
+		assertEquals(2, table.selectMany(Where.fieldContainsValue("array", "d")).size());
 	}
 }

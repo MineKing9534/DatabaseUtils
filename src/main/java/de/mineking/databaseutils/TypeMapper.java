@@ -44,9 +44,14 @@ public interface TypeMapper<T, R> {
 		};
 	}
 
+	@NotNull
+	default Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+		return value == null ? Object.class : value.getClass();
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
-	default T format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable R value) {
+	default T format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
 		return (T) value;
 	}
 
@@ -215,6 +220,12 @@ public interface TypeMapper<T, R> {
 
 		@NotNull
 		@Override
+		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
+			return PostgresType.TIMESTAMP;
+		}
+
+		@NotNull
+		@Override
 		public Argument createArgument(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Instant value) {
 			return new Argument() {
 				@Override
@@ -227,12 +238,6 @@ public interface TypeMapper<T, R> {
 					return Objects.toString(value);
 				}
 			};
-		}
-
-		@NotNull
-		@Override
-		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
-			return PostgresType.TIMESTAMP;
 		}
 
 		@Nullable
@@ -257,8 +262,10 @@ public interface TypeMapper<T, R> {
 
 		@NotNull
 		@Override
-		public UUID format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable java.util.UUID value) {
-			return value == null ? java.util.UUID.randomUUID() : value;
+		public UUID format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			if (value instanceof UUID uuid) return uuid;
+			if (value instanceof String str) return java.util.UUID.fromString(str);
+			return java.util.UUID.randomUUID();
 		}
 
 		@Nullable
@@ -283,8 +290,16 @@ public interface TypeMapper<T, R> {
 
 		@NotNull
 		@Override
-		public String format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable ID value) {
-			return value == null ? ID.generate().asString() : value.asString();
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			return String.class;
+		}
+
+		@NotNull
+		@Override
+		public String format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			if (value instanceof ID id) return id.asString();
+			if (value instanceof String str) return str;
+			return ID.generate().asString();
 		}
 
 		@Nullable
@@ -312,13 +327,22 @@ public interface TypeMapper<T, R> {
 			return manager.getType(ReflectionUtils.getComponentType(type), f);
 		}
 
-		@Nullable
+		@NotNull
 		@Override
-		public Object format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Optional<?> value) {
-			if(value == null) return null;
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			if (!(value instanceof Optional<?>)) return Object.class;
 
 			var p = ReflectionUtils.getComponentType(type);
-			return manager.getMapper(p, f).format(manager, p, f, value.orElse(null));
+			return manager.getMapper(p, f).getFormattedType(manager, type, f, value);
+		}
+
+		@Nullable
+		@Override
+		public Object format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			if (!(value instanceof Optional<?> o)) return null;
+
+			var p = ReflectionUtils.getComponentType(type);
+			return manager.getMapper(p, f).format(manager, p, f, o.orElse(null));
 		}
 
 		@Nullable
@@ -349,8 +373,10 @@ public interface TypeMapper<T, R> {
 
 		@Nullable
 		@Override
-		public String format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Enum<?> value) {
-			return value == null ? null : value.name();
+		public String format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			if (value instanceof Enum<?> e) return e.name();
+			if (value instanceof String str) return str;
+			return null;
 		}
 
 		@Nullable
@@ -404,6 +430,12 @@ public interface TypeMapper<T, R> {
 			};
 		}
 
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			return ReflectionHelpers.getClazz(ReflectionUtils.getComponentType(type)).arrayType();
+		}
+
 		@Nullable
 		@Override
 		public Object[] format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
@@ -421,11 +453,11 @@ public interface TypeMapper<T, R> {
 
 				return array.stream()
 						.map(v -> Arrays.copyOf(v, maxLength.get()))
-						.toArray(i -> ReflectionUtils.createArray(ReflectionUtils.getComponentType(component), i, maxLength.get()));
+						.toArray(i -> ReflectionUtils.createArray(manager.getMapper(ReflectionUtils.getComponentType(component), f).getFormattedType(manager, type, f, null), i, maxLength.get()));
 			} else {
 				return ReflectionUtils.stream(value)
 						.map(x -> manager.format(component, f, x))
-						.toArray(i -> ReflectionUtils.createArray(component, i));
+						.toArray(i -> ReflectionUtils.createArray(manager.getMapper(component, f).getFormattedType(manager, type, f, null), i));
 			}
 		}
 
@@ -452,21 +484,7 @@ public interface TypeMapper<T, R> {
 
 			return ReflectionUtils.isArray(type, false)
 					? array.toArray(i -> ReflectionUtils.createArray(component, i))
-					: createCollection(ReflectionUtils.getClass(type), ReflectionUtils.getClass(component), array);
-		}
-
-		@SuppressWarnings("unchecked")
-		private <C> Collection<C> createCollection(Class<?> type, Class<?> component, List<C> array) {
-			if(type.isAssignableFrom(List.class)) return new ArrayList<>(array);
-			else if(type.isAssignableFrom(Set.class)) return new HashSet<>(array);
-			else if(type.isAssignableFrom(EnumSet.class)) return (Collection<C>) createEnumSet(array, component);
-
-			throw new IllegalStateException("Cannot create collection for " + type.getTypeName() + " with component " + component.getTypeName());
-		}
-
-		@SuppressWarnings("unchecked")
-		private <E extends Enum<E>> EnumSet<E> createEnumSet(Collection<?> collection, Class<?> component) {
-			return collection.isEmpty() ? EnumSet.noneOf((Class<E>) component) : EnumSet.copyOf((Collection<E>) collection);
+					: ReflectionHelpers.createCollection(ReflectionUtils.getClass(type), ReflectionUtils.getClass(component), array);
 		}
 	};
 
