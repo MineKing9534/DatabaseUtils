@@ -505,11 +505,11 @@ public interface TypeMapper<T, R> {
 
 				return array.stream()
 						.map(v -> Arrays.copyOf(v, maxLength.get()))
-						.toArray(i -> ReflectionUtils.createArray(manager.getMapper(ReflectionUtils.getComponentType(component), f).getFormattedType(manager, type, f, array), i, maxLength.get()));
+						.toArray(i -> ReflectionUtils.createArray(manager.getMapper(ReflectionUtils.getComponentType(component), f).getFormattedType(manager, type, f, null), i, maxLength.get()));
 			} else {
 				return ReflectionUtils.stream(value)
 						.map(x -> manager.format(component, f, x))
-						.toArray(i -> ReflectionUtils.createArray(manager.getMapper(component, f).getFormattedType(manager, type, f, value), i));
+						.toArray(i -> ReflectionUtils.createArray(manager.getMapper(component, f).getFormattedType(manager, type, f, null), i));
 			}
 		}
 
