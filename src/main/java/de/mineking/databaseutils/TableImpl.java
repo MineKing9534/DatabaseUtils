@@ -126,10 +126,12 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 
 		columns.forEach((name, field) -> {
 			try {
+				field.setAccessible(true);
 				System.out.println("field: " + field.getName());
 				System.out.println("extract: " + manager.extract(field.getGenericType(), field, name, set));
 				System.out.println("parsed: " + manager.parse(field.getGenericType(), field, manager.extract(field.getGenericType(), field, name, set)));
 				field.set(instance, manager.parse(field.getGenericType(), field, manager.extract(field.getGenericType(), field, name, set)));
+				System.out.println("validate: " + field.get(instance));
 				System.out.println("finished");
 			} catch(IllegalAccessException | SQLException e) {
 				System.out.println("exception: " + e.getMessage());
@@ -137,7 +139,7 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 			}
 		});
 
-		System.out.println(instance);
+		System.out.println("---> result: " + instance);
 
 		return instance;
 	}
