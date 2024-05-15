@@ -132,6 +132,7 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 				System.out.println("parsed: " + manager.parse(field.getGenericType(), field, manager.extract(field.getGenericType(), field, name, set)));
 				field.set(instance, manager.parse(field.getGenericType(), field, manager.extract(field.getGenericType(), field, name, set)));
 				System.out.println("validate: " + field.get(instance));
+				System.out.println("validate full: " + instance);
 				System.out.println("finished");
 			} catch(IllegalAccessException | SQLException e) {
 				System.out.println("exception: " + e.getMessage());
