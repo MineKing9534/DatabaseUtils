@@ -126,8 +126,13 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 
 		columns.forEach((name, field) -> {
 			try {
+				System.out.println("field: " + field.getName());
+				System.out.println("extract: " + manager.extract(field.getGenericType(), field, name, set));
+				System.out.println("parsed: " + manager.parse(field.getGenericType(), field, manager.extract(field.getGenericType(), field, name, set)));
 				field.set(instance, manager.parse(field.getGenericType(), field, manager.extract(field.getGenericType(), field, name, set)));
+				System.out.println("finished");
 			} catch(IllegalAccessException | SQLException e) {
+				System.out.println("exception: " + e.getMessage());
 				throw new RuntimeException(e);
 			}
 		});
