@@ -137,6 +137,8 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 			}
 		});
 
+		System.out.println(instance);
+
 		return instance;
 	}
 
