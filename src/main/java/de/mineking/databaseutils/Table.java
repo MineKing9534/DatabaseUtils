@@ -29,6 +29,8 @@ public interface Table<T> {
 	Map<String, Field> getKeys();
 
 
+	int getRowCount();
+
 	@NotNull
 	Optional<T> selectOne(@NotNull Where where);
 

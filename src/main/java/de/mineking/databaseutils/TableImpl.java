@@ -96,6 +96,15 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 		return keys;
 	}
 
+	@Override
+	public int getRowCount() {
+		return manager.db.withHandle(handle -> handle.createQuery("select count(*) from <name>")
+				.define("name", name)
+				.mapTo(Integer.class)
+				.first()
+		);
+	}
+
 	@NotNull
 	@Override
 	public Optional<T> selectOne(@NotNull Where where) {
