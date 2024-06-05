@@ -29,7 +29,11 @@ public interface Table<T> {
 	Map<String, Field> getKeys();
 
 
-	int getRowCount();
+	int getRowCount(@NotNull Where where);
+
+	default int getRowCount() {
+		return getRowCount(Where.empty());
+	}
 
 	@NotNull
 	Optional<T> selectOne(@NotNull Where where);

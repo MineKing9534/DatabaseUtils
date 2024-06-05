@@ -97,9 +97,11 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 	}
 
 	@Override
-	public int getRowCount() {
-		return manager.db.withHandle(handle -> handle.createQuery("select count(*) from <name>")
+	public int getRowCount(@NotNull Where where) {
+		return manager.db.withHandle(handle -> handle.createQuery("select count(*) from <name> <where>")
 				.define("name", name)
+				.define("where", where.format())
+				.bindMap(where.formatValues(this))
 				.mapTo(Integer.class)
 				.first()
 		);
