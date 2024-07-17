@@ -132,7 +132,7 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 		);
 	}
 
-	private T createObject(ResultSet set, StatementContext context) {
+	public T createObject(ResultSet set, StatementContext context) {
 		var instance = this.instance.get();
 
 		columns.forEach((name, field) -> {
@@ -146,7 +146,7 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 		return instance;
 	}
 
-	static String getColumnName(Field field) {
+	public static String getColumnName(Field field) {
 		var column = field.getAnnotation(Column.class);
 		return (column == null || column.name().isEmpty() ? field.getName() : column.name()).toLowerCase();
 	}
@@ -161,7 +161,7 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 		);
 	}
 
-	private boolean execute(@NotNull T object, @NotNull Update query) {
+	public boolean execute(@NotNull T object, @NotNull Update query) {
 		columns.forEach((name, field) -> {
 			try {
 				query.bind(name, manager.getArgument(field.getGenericType(), field, field.get(object)));
