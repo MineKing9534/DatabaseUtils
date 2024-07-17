@@ -13,6 +13,9 @@ public interface Table<T> {
 	DatabaseManager getManager();
 
 	@NotNull
+	Table<T> getImplementation();
+
+	@NotNull
 	String getName();
 
 

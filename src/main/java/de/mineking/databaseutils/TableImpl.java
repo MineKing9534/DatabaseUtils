@@ -49,6 +49,12 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 
 	@NotNull
 	@Override
+	public Table<T> getImplementation() {
+		return this;
+	}
+
+	@NotNull
+	@Override
 	public String getName() {
 		return name;
 	}
