@@ -3,9 +3,9 @@ package de.mineking.databaseutils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.ToNumberStrategy;
-import de.mineking.javautils.ID;
 import de.mineking.databaseutils.type.DataType;
 import de.mineking.databaseutils.type.PostgresType;
+import de.mineking.javautils.ID;
 import de.mineking.javautils.reflection.ReflectionUtils;
 import org.jdbi.v3.core.argument.Argument;
 import org.jdbi.v3.core.statement.StatementContext;
@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -137,7 +138,11 @@ public interface TypeMapper<T, R> {
 		@Nullable
 		@Override
 		public Double extract(@NotNull ResultSet set, @NotNull String name, @NotNull Type target) throws SQLException {
-			return (Double) set.getObject(name);
+			Object temp = set.getObject(name);
+			if (temp instanceof Double d) return d;
+			if (temp instanceof BigDecimal d) return d.doubleValue();
+
+			return null;
 		}
 	};
 
