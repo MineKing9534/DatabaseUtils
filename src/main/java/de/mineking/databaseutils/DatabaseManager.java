@@ -5,8 +5,6 @@ import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.argument.Argument;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
@@ -17,10 +15,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class DatabaseManager {
-	public final static Logger logger = LoggerFactory.getLogger(DatabaseManager.class);
+	public static Function<Class<?>, ClassLoader> DEFAULT_LOADER = Class::getClassLoader;
 
 	private final Map<String, Object> data = new HashMap<>();
 
@@ -92,42 +91,59 @@ public class DatabaseManager {
 		return (R) getMapper(type, field).parse(this, type, field, value);
 	}
 
-	private class TableBuilder<O, T extends Table<O>> {
-		private final T table;
+	public class TableBuilder<O, T extends Table<O>> {
+		private final Class<O> type;
+		private final Supplier<O> instance;
 
+		private String name;
+		private Class<? extends Table<O>> table;
+		private ClassLoader loader;
+
+		public TableBuilder(Class<O> type, Supplier<O> instance) {
+			this.type = type;
+			this.instance = instance;
+		}
+
+		@NotNull
+		public TableBuilder<O, T> name(@NotNull String name) {
+			this.name = name;
+			return this;
+		}
+
+		@NotNull
+		public TableBuilder<O, T> loader(@NotNull ClassLoader loader) {
+			this.loader = loader;
+			return this;
+		}
+
+		@NotNull
 		@SuppressWarnings("unchecked")
-		public TableBuilder(Class<T> table, Class<O> type, Supplier<O> instance, String name) {
-			this.table = (T) Proxy.newProxyInstance(
-					table.getClassLoader(),
-					new Class<?>[] {table},
-					new TableImpl<>(DatabaseManager.this, this::getTable, type, instance, name)
+		public <N extends Table<O>> TableBuilder<O, N> table(@NotNull Class<N> table) {
+			this.table = table;
+			return (TableBuilder<O, N>) this;
+		}
+
+		@NotNull
+		@SuppressWarnings("unchecked")
+		public T get() {
+			return (T) Proxy.newProxyInstance(
+					loader == null ? DEFAULT_LOADER.apply(type) : loader,
+					new Class<?>[] { table == null ? Table.class : table },
+					new TableImpl<>(DatabaseManager.this, type, instance, name == null ? type.getSimpleName().toLowerCase() : name)
 			);
 		}
 
-		private T getTable() {
+		@NotNull
+		public T create() {
+			T table = get();
+			table.createIfNotExists();
 			return table;
 		}
 	}
 
 	@NotNull
-	public <O, T extends Table<O>> T getTable(@NotNull Class<T> table, @NotNull Class<O> type, @NotNull Supplier<O> instance, @NotNull String name) {
-		return new TableBuilder<>(table, type, instance, name).getTable();
-	}
-
-	@NotNull
-	public <O, T extends Table<O>> T getTable(@NotNull Class<T> table, @NotNull Class<O> type, @NotNull Supplier<O> instance) {
-		return getTable(table, type, instance, type.getSimpleName().toLowerCase());
-	}
-
-	@NotNull
-	@SuppressWarnings("unchecked")
-	public <O> Table<O> getTable(@NotNull Class<O> type, @NotNull Supplier<O> instance, @NotNull String name) {
-		return getTable(Table.class, type, instance, name);
-	}
-
-	@NotNull
-	public <O> Table<O> getTable(@NotNull Class<O> type, @NotNull Supplier<O> instance) {
-		return getTable(type, instance, type.getSimpleName().toLowerCase());
+	public <O> TableBuilder<O, ?> getTable(@NotNull Class<O> type, @NotNull Supplier<O> instance) {
+		return new TableBuilder<>(type, instance);
 	}
 
 	@NotNull
