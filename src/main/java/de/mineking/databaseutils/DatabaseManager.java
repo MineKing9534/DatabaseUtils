@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class DatabaseManager {
-	public static ClassLoader loader = ClassLoader.getSystemClassLoader();
 	public final static Logger logger = LoggerFactory.getLogger(DatabaseManager.class);
 
 	private final Map<String, Object> data = new HashMap<>();
@@ -99,7 +98,7 @@ public class DatabaseManager {
 		@SuppressWarnings("unchecked")
 		public TableBuilder(Class<T> table, Class<O> type, Supplier<O> instance, String name) {
 			this.table = (T) Proxy.newProxyInstance(
-					loader,
+					table.getClassLoader(),
 					new Class<?>[] {table},
 					new TableImpl<>(DatabaseManager.this, this::getTable, type, instance, name)
 			);
