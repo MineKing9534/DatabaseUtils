@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TableImpl<T> implements InvocationHandler, Table<T> {
-	private final Supplier<Table<T>> table;
-
 	private final String name;
 	private final Supplier<T> instance;
 	private final DatabaseManager manager;
@@ -24,9 +22,8 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 	private final Map<String, Field> keys = new LinkedHashMap<>();
 	private final Map<String, Field> unique = new LinkedHashMap<>();
 
-	TableImpl(DatabaseManager manager, Supplier<Table<T>> table, Class<T> type, Supplier<T> instance, String name) {
+	TableImpl(DatabaseManager manager, Class<T> type, Supplier<T> instance, String name) {
 		this.manager = manager;
-		this.table = table;
 		this.instance = instance;
 		this.name = name;
 
@@ -59,9 +56,8 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 		return name;
 	}
 
-	@NotNull
 	@Override
-	public Table<T> createTable() {
+	public void createIfNotExists() {
 		var columns = Stream.concat(
 				this.keys.entrySet().stream(),
 				this.columns.entrySet().stream().filter(e -> !keys.containsKey(e.getKey()))
@@ -80,8 +76,6 @@ public class TableImpl<T> implements InvocationHandler, Table<T> {
 				.define("columns", fColumns)
 				.execute()
 		);
-
-		return table.get();
 	}
 
 	@NotNull

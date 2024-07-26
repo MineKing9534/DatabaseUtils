@@ -20,7 +20,7 @@ public interface Table<T> {
 
 
 	@NotNull
-	Table<T> createTable();
+	void createIfNotExists();
 
 	@NotNull
 	Map<String, Field> getColumns();

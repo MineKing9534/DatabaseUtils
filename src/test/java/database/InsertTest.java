@@ -1,8 +1,8 @@
 package database;
 
-import de.mineking.javautils.ID;
 import de.mineking.databaseutils.*;
 import de.mineking.databaseutils.exception.ConflictException;
+import de.mineking.javautils.ID;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -38,7 +38,7 @@ public class InsertTest {
 
 	public InsertTest() {
 		manager = new DatabaseManager("jdbc:postgresql://localhost:5433/postgres", "postgres", "postgres");
-		table = manager.getTable(TestClass.class, TestClass::new, "insert").createTable();
+		table = manager.getTable(TestClass.class, TestClass::new).name("insert").create();
 
 		manager.getDriver().setSqlLogger(new SqlLogger() {
 			@Override
