@@ -7,10 +7,6 @@ import org.jdbi.v3.core.argument.Argument;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
 import java.util.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -169,7 +165,7 @@ public interface Where {
 		if(value.isEmpty()) return FALSE();
 
 		var id = ID.generate().asString();
-		return new WhereImpl(name + " = any(:" + id + ")", Map.of(id, ArgumentFactory.create(name, value, table -> {
+		return new WhereImpl("\"" + name + "\" = any(:" + id + ")", Map.of(id, ArgumentFactory.create(name, value, table -> {
 			var f = table.getColumns().get(name);
 			if(f == null) throw new IllegalStateException("Table has no column with name '" + name + "'");
 
