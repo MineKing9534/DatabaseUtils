@@ -282,9 +282,17 @@ public interface TypeMapper<T, R> {
 		}
 	};
 
-	TypeMapper<String, ID> MKID = new TypeMapper<>() {
+	@Deprecated
+	TypeMapper<String, ID> LEGACY_ID_MAPPER = new TypeMapper<>() {
+		public static boolean WARNING = true;
+
 		@Override
 		public boolean accepts(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
+			if (WARNING) {
+				DatabaseManager.logger.warn("You are using the legacy id TypeMapper. Consider using 'DatabaseManager.ID_TYPE_MAPPER = TypeMapper.ID_MAPPER' to update to the newer version, that supports proper sorting. You can use TypeMapper#convertId() for converting your current table");
+				WARNING = false;
+			}
+
 			return type.equals(ID.class);
 		}
 
@@ -303,7 +311,7 @@ public interface TypeMapper<T, R> {
 		@NotNull
 		@Override
 		public String format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
-			if (value instanceof ID id && !id.asNumber().equals(BigInteger.ZERO)) return id.asString();
+			if (value instanceof ID id && id.asNumber() != 0) return id.asString();
 			if (value instanceof String str && !str.matches("0+")) return str;
 			return ID.generate().asString();
 		}
@@ -318,6 +326,44 @@ public interface TypeMapper<T, R> {
 		@Override
 		public ID parse(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field field, @Nullable String value) {
 			return value == null ? null : ID.decode(value);
+		}
+	};
+
+	TypeMapper<Long, ID> ID_MAPPER = new TypeMapper<>() {
+		@Override
+		public boolean accepts(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
+			return type.equals(ID.class);
+		}
+
+		@NotNull
+		@Override
+		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
+			return PostgresType.BIG_INT;
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			return BigInteger.class;
+		}
+
+		@NotNull
+		@Override
+		public Long format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			if (value instanceof ID id && id.asNumber() != 0) return id.asNumber();
+			if (value instanceof String str && !str.matches("0+")) return ID.decode(str).asNumber();
+			return ID.generate().asNumber();
+		}
+
+		@Override
+		public Long extract(@NotNull ResultSet set, @NotNull String name, @NotNull Type target) throws SQLException {
+			return set.getLong(name);
+		}
+
+		@Nullable
+		@Override
+		public ID parse(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field field, @Nullable Long value) {
+			return value == null || value == 0 ? null : ID.decode(value);
 		}
 	};
 
@@ -550,4 +596,67 @@ public interface TypeMapper<T, R> {
 			return value == null ? null : gson.fromJson(value, type);
 		}
 	};
+
+
+
+
+	TypeMapper<?, ID> ID_CONVERTER = new TypeMapper<Object, ID>() {
+		@Override
+		public boolean accepts(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
+			return type.equals(ID.class);
+		}
+
+		@NotNull
+		@Override
+		public DataType getType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f) {
+			return PostgresType.TEXT;
+		}
+
+		@NotNull
+		@Override
+		public Type getFormattedType(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			return BigInteger.class;
+		}
+
+		@NotNull
+		@Override
+		public Long format(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field f, @Nullable Object value) {
+			if (value instanceof ID id && id.asNumber() != 0) return id.asNumber();
+			if (value instanceof String str && !str.matches("0+")) return ID.decode(str).asNumber();
+			return ID.generate().asNumber();
+		}
+
+		@Nullable
+		@Override
+		public String extract(@NotNull ResultSet set, @NotNull String name, @NotNull Type target) throws SQLException {
+			return set.getString(name);
+		}
+
+		@Nullable
+		@Override
+		public ID parse(@NotNull DatabaseManager manager, @NotNull Type type, @NotNull Field field, @Nullable Object value) {
+			return value == null ? null : ID.decode((String) value);
+		}
+	};
+
+
+	static void convert(@NotNull Table<?> table, @NotNull String column) {
+		if (DatabaseManager.ID_TYPE_MAPPER != ID_CONVERTER) throw new IllegalStateException("You have to set DatabaseManager.ID_TYPE_MAPPER to TypeMapper.ID_CONVERTER");
+		table.selectAll().forEach(obj -> {
+			try {
+				ID id = (ID) table.getColumns().get(column).get(obj);
+
+				table.getManager().getDriver().useHandle(handle -> handle.createUpdate("update <name> set <column> = :new where <column> = :old")
+						.define("name", table.getName())
+						.define("column", column)
+						.bind("old", id.asString())
+						.bind("new", id.asNumber())
+						.execute()
+				);
+			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		});
+		DatabaseManager.logger.info("Table {} converted. Please update the column type to 'bigint' now", table.getName());
+	}
 }
