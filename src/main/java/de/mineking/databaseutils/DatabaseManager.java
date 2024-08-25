@@ -1,10 +1,13 @@
 package de.mineking.databaseutils;
 
 import de.mineking.databaseutils.type.DataType;
+import de.mineking.javautils.ID;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.argument.Argument;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
@@ -19,6 +22,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class DatabaseManager {
+	public final static Logger logger = LoggerFactory.getLogger(DatabaseManager.class);
+
+	@SuppressWarnings("deprecation")
+	public static TypeMapper<?, ID> ID_TYPE_MAPPER = TypeMapper.LEGACY_ID_MAPPER; //Use legacy for a few versions to allow users to transition to the new system
 	public static Function<Class<?>, ClassLoader> DEFAULT_LOADER = Class::getClassLoader;
 
 	private final Map<String, Object> data = new HashMap<>();
@@ -39,10 +46,10 @@ public class DatabaseManager {
 		mappers.add(TypeMapper.STRING);
 		mappers.add(TypeMapper.TIMESTAMP);
 		mappers.add(TypeMapper.UUID);
-		mappers.add(TypeMapper.MKID);
 		mappers.add(TypeMapper.OPTIONAL);
 		mappers.add(TypeMapper.ENUM);
 		mappers.add(TypeMapper.ARRAY);
+		mappers.add(ID_TYPE_MAPPER);
 	}
 
 	@NotNull
