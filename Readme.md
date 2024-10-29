@@ -1,6 +1,9 @@
 ![[Java CI]](https://github.com/MineKing9534/DatabaseUtils/actions/workflows/check.yml/badge.svg)
 ![[Latest Version]](https://maven.mineking.dev/api/badge/latest/releases/de/mineking/DatabaseUtils?prefix=v&name=Latest%20Version&color=0374b5)
 
+> [!NOTE]  
+> If you use Kotlin it is highly recommended to use [KORMite](https://github.com/MineKing9534/KORMite) instead. It is a kotlin rewrite of this library with more features, more stability and a cleaner API interface.
+
 # Installation
 
 DatabaseUtils is hosted on a custom repository at [https://maven.mineking.dev](https://maven.mineking.dev/#/releases/de/mineking/DatabaseUtils). Replace VERSION with the lastest version (without the `v` prefix).
